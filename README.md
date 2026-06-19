@@ -20,6 +20,8 @@
 
 **Next:** Enclii onboard, worker JWT wiring (P3b), Selva P4 SaaS refactor.
 
+**Public:** [coupler.madfam.io](https://coupler.madfam.io) · API: [coupler-api.madfam.io](https://coupler-api.madfam.io)
+
 See [docs/IMPLEMENTATION_ROADMAP.md](docs/IMPLEMENTATION_ROADMAP.md) and [docs/SELVA_TOOLING_AUDIT.md](docs/SELVA_TOOLING_AUDIT.md).
 
 ## Architecture

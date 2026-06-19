@@ -50,3 +50,24 @@ jobs:
           node-version: "22"
       - run: npm install -g typescript@5
       - run: npm run check
+
+  landing:
+    name: Landing site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate HTML present
+        run: test -f apps/landing/public/index.html
+      - name: Validate nginx config
+        run: docker run --rm -v "$PWD/apps/landing/nginx.conf:/etc/nginx/conf.d/default.conf:ro" nginx:alpine nginx -t
+
+  scripts:
+    name: Deploy scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test kustomize patch helper
+        run: |
+          cp k8s/overlays/staging/kustomization.yaml /tmp/k.yaml
+          python3 scripts/patch-kustomize-digest.py /tmp/k.yaml ghcr.io/madfam-org/coupler-landing sha256:abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789
+          grep abcdef /tmp/k.yaml

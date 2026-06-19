@@ -65,7 +65,7 @@
 
 ## P5 — Production
 
-- `enclii onboard` → `api.coupler.madfam.io`
+- `enclii onboard` → `coupler-api.madfam.io`
 - Register `coupler-gateway` OAuth client in Janua prod
 - Staging synthetic: Selva worker → Coupler → Slack
 

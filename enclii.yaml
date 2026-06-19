@@ -18,7 +18,7 @@ spec:
       port: 8787
       health_path: /health
       domains:
-        - host: api.coupler.madfam.io
+        - host: coupler-api.madfam.io
           primary: true
       env:
         - name: COUPLER_JANUA_ISSUER
@@ -29,6 +29,15 @@ spec:
           value: /connectors
         - name: COUPLER_AUTH_REQUIRED
           value: "true"
+      secrets: []
+    - name: coupler-landing
+      path: apps/landing
+      dockerfile: apps/landing/Dockerfile
+      port: 8080
+      health_path: /health
+      domains:
+        - host: coupler.madfam.io
+          primary: true
       secrets: []
   dependencies:
     - platform: janua

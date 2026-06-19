@@ -17,7 +17,8 @@
 - [x] JWT verification against Janua JWKS (`internal/auth/jwks.go`)
 - [x] Janua delegation client (`internal/janua/`)
 - [x] Executor dispatch GitHub + Slack (`internal/executor/`)
-- [ ] Enclii onboard + production deploy
+- [x] `coupler-landing` at `coupler.madfam.io` (`apps/landing`)
+- [ ] Enclii onboard + production domains (`coupler-api.madfam.io`, `coupler.madfam.io`)
 
 ## Connectors
 
@@ -48,6 +49,7 @@
 - [x] `docs/COUPLER_INTEGRATION.md` updated with audit cross-links
 - [ ] Worker `set_coupler_user_jwt()` wiring (P3b)
 
-## Domains (TBD at onboard)
+## Domains
 
-- Candidate: `api.coupler.madfam.io`, `coupler.madfam.io`
+- `coupler.madfam.io` — marketing landing (`apps/landing`)
+- `coupler-api.madfam.io` — REST gateway (`apps/gateway`)

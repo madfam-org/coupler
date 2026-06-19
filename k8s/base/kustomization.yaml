@@ -3,8 +3,12 @@ kind: Kustomization
 
 resources:
   - gateway.yaml
+  - landing.yaml
 
 images:
   - name: ghcr.io/madfam-org/coupler-gateway
     newName: ghcr.io/madfam-org/coupler-gateway
+    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+  - name: ghcr.io/madfam-org/coupler-landing
+    newName: ghcr.io/madfam-org/coupler-landing
     digest: sha256:0000000000000000000000000000000000000000000000000000000000000000

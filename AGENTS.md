@@ -16,7 +16,8 @@ MADFAM's **Agent Tool Plane (ATP)**. Fourth platform alongside Enclii, Janua, an
 
 | Path | Purpose |
 |------|---------|
-| `apps/gateway/` | REST + future MCP SSE entry |
+| `apps/gateway/` | REST API at coupler-api.madfam.io |
+| `apps/landing/` | Public site at coupler.madfam.io |
 | `packages/mcp-server/` | Cursor/Claude stdio MCP |
 | `packages/sdk-typescript/` | `@madfam/coupler` consumer SDK |
 | `connectors/` | Tier-1 connector manifests + runtime |

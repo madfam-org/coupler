@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Coupler — MADFAM Agent Tool Plane</title>
+  <meta name="description" content="Sovereign delegated SaaS tool execution for AI agents. Composio-class power without Composio. Built for the MADFAM ecosystem." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0f0d;
+      --bg-elevated: #111916;
+      --border: #1e2e28;
+      --text: #e8f5ef;
+      --muted: #8aa89a;
+      --accent: #3dff9a;
+      --accent-dim: #1a9e5c;
+      --warm: #f5c842;
+      --glow: rgba(61, 255, 154, 0.15);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "DM Sans", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    .mesh {
+      position: fixed; inset: 0; z-index: -1; pointer-events: none;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% -10%, var(--glow), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 90% 10%, rgba(245, 200, 66, 0.08), transparent 50%),
+        radial-gradient(ellipse 50% 30% at 50% 100%, rgba(26, 158, 92, 0.12), transparent 60%);
+    }
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.25rem 2rem; border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 10;
+      background: rgba(10, 15, 13, 0.85);
+    }
+    .logo { font-weight: 700; font-size: 1.15rem; letter-spacing: -0.02em; }
+    .logo span { color: var(--accent); }
+    nav a {
+      color: var(--muted); text-decoration: none; margin-left: 1.5rem; font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+    nav a:hover { color: var(--accent); }
+    .btn {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.65rem 1.25rem; border-radius: 8px; font-weight: 500;
+      text-decoration: none; font-size: 0.95rem; transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-primary {
+      background: var(--accent); color: #041208;
+      box-shadow: 0 0 24px var(--glow);
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 32px var(--glow); }
+    .btn-ghost { border: 1px solid var(--border); color: var(--text); }
+    .btn-ghost:hover { border-color: var(--accent-dim); color: var(--accent); }
+    main { max-width: 1100px; margin: 0 auto; padding: 0 2rem 4rem; }
+    .hero { padding: 5rem 0 4rem; text-align: center; }
+    .badge {
+      display: inline-block; font-family: "IBM Plex Mono", monospace; font-size: 0.75rem;
+      padding: 0.35rem 0.75rem; border-radius: 999px; border: 1px solid var(--border);
+      color: var(--accent); margin-bottom: 1.5rem; letter-spacing: 0.04em;
+    }
+    h1 {
+      font-size: clamp(2.25rem, 5vw, 3.5rem); font-weight: 700;
+      line-height: 1.15; letter-spacing: -0.03em; max-width: 18ch; margin: 0 auto 1.25rem;
+    }
+    h1 em { font-style: normal; color: var(--accent); }
+    .hero p.lead {
+      font-size: 1.2rem; color: var(--muted); max-width: 42rem; margin: 0 auto 2rem;
+    }
+    .hero-cta { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    section { padding: 3.5rem 0; border-top: 1px solid var(--border); }
+    h2 { font-size: 1.75rem; margin-bottom: 0.75rem; letter-spacing: -0.02em; }
+    .section-intro { color: var(--muted); max-width: 36rem; margin-bottom: 2rem; }
+    .grid-3 {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem;
+    }
+    .card {
+      background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 12px;
+      padding: 1.5rem; transition: border-color 0.2s;
+    }
+    .card:hover { border-color: var(--accent-dim); }
+    .card h3 { font-size: 1rem; margin-bottom: 0.5rem; color: var(--accent); }
+    .card p { font-size: 0.9rem; color: var(--muted); }
+    .ecosystem {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-top: 1.5rem;
+    }
+    @media (max-width: 700px) { .ecosystem { grid-template-columns: repeat(2, 1fr); } }
+    .pillar {
+      text-align: center; padding: 1.25rem 0.75rem; border-radius: 10px;
+      border: 1px solid var(--border); background: var(--bg-elevated);
+    }
+    .pillar strong { display: block; font-size: 0.85rem; margin-bottom: 0.25rem; }
+    .pillar span { font-size: 0.75rem; color: var(--muted); }
+    .pillar.coupler { border-color: var(--accent); box-shadow: inset 0 0 20px var(--glow); }
+    .code {
+      font-family: "IBM Plex Mono", monospace; font-size: 0.8rem;
+      background: #060a08; border: 1px solid var(--border); border-radius: 10px;
+      padding: 1.25rem; overflow-x: auto; margin-top: 1rem; color: #b8d4c4;
+    }
+    .code .kw { color: var(--accent); }
+    .code .str { color: var(--warm); }
+    .connectors { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+    .tag {
+      font-family: "IBM Plex Mono", monospace; font-size: 0.75rem;
+      padding: 0.4rem 0.7rem; border-radius: 6px; background: var(--bg-elevated);
+      border: 1px solid var(--border); color: var(--muted);
+    }
+    .tag.live { border-color: var(--accent-dim); color: var(--accent); }
+    footer {
+      border-top: 1px solid var(--border); padding: 2rem; text-align: center;
+      color: var(--muted); font-size: 0.85rem;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="mesh" aria-hidden="true"></div>
+  <header>
+    <div class="logo">Coupler<span>.</span></div>
+    <nav>
+      <a href="#why">Why</a>
+      <a href="#ecosystem">Ecosystem</a>
+      <a href="#tools">Tools</a>
+      <a href="https://github.com/madfam-org/coupler">GitHub</a>
+      <a href="https://coupler-api.madfam.io/health">API</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="badge">AGENT TOOL PLANE · AGPL-3.0 · MADFAM</div>
+      <h1>Give your agents <em>hands</em> — not another SaaS middleware bill</h1>
+      <p class="lead">
+        Coupler is MADFAM's sovereign tool plane: delegated GitHub, Slack, and the long tail of SaaS —
+        with Janua holding the keys, Selva holding the brain, and your metal holding the execution.
+      </p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="https://coupler-api.madfam.io/v1/tools">Explore tool catalog →</a>
+        <a class="btn btn-ghost" href="https://github.com/madfam-org/coupler">Read the source</a>
+      </div>
+    </section>
+
+    <section id="why">
+      <h2>Composio-class. Zero Composio.</h2>
+      <p class="section-intro">
+        Teams need tool catalogs, search, execute APIs, MCP, and triggers. Coupler delivers that
+        without embedding connector logic in Enclii or Janua — and without shipping credentials through agent code.
+      </p>
+      <div class="grid-3">
+        <div class="card">
+          <h3>Delegated execute</h3>
+          <p>Agents act on behalf of real users via Janua ConnectedAccount — short-lived tokens, no refresh tokens in Coupler.</p>
+        </div>
+        <div class="card">
+          <h3>Two trust zones</h3>
+          <p><code>coupler.*</code> for user SaaS. <code>madfam.ops.*</code> for operator infra proxied to Enclii.</p>
+        </div>
+        <div class="card">
+          <h3>MCP + HTTP</h3>
+          <p>Selva workers, ecosystem apps, and Cursor dev agents share one contract — REST gateway and stdio MCP.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="ecosystem">
+      <h2>Fourth platform. Clear boundaries.</h2>
+      <p class="section-intro">Coupler does not replace Janua, Enclii, or Selva — it connects them to the outside world.</p>
+      <div class="ecosystem">
+        <div class="pillar"><strong>Janua</strong><span>Identity + vault</span></div>
+        <div class="pillar"><strong>Enclii</strong><span>Deploy + ops</span></div>
+        <div class="pillar"><strong>Selva</strong><span>Agents + LLM</span></div>
+        <div class="pillar coupler"><strong>Coupler</strong><span>Tools + execute</span></div>
+      </div>
+      <pre class="code"><span class="kw">POST</span> <span class="str">https://coupler-api.madfam.io/v1/tools/execute</span>
+Authorization: Bearer &lt;janua_user_jwt&gt;
+{ "tool": "coupler.slack.post_message", "arguments": { "channel": "#ops", "text": "Ship it." } }</pre>
+    </section>
+
+    <section id="tools">
+      <h2>Tier-1 connectors (live)</h2>
+      <p class="section-intro">Manifest-driven catalog. New connectors ship in-repo without commits to Enclii or Janua.</p>
+      <div class="connectors">
+        <span class="tag live">coupler.github.list_repos</span>
+        <span class="tag live">coupler.github.get_issue</span>
+        <span class="tag live">coupler.github.create_issue</span>
+        <span class="tag live">coupler.slack.post_message</span>
+        <span class="tag live">coupler.slack.list_channels</span>
+        <span class="tag">gmail · notion · linear (roadmap)</span>
+      </div>
+    </section>
+
+    <section>
+      <h2>Build with us</h2>
+      <p class="section-intro">Public repo. Ecosystem docs. Selva integration behind <code>SELVA_COUPLER_TOOLS_ENABLED</code>.</p>
+      <div class="hero-cta" style="justify-content: flex-start;">
+        <a class="btn btn-primary" href="https://github.com/madfam-org/coupler/blob/main/docs/SEPARATION_OF_CONCERNS.md">Architecture docs</a>
+        <a class="btn btn-ghost" href="https://github.com/madfam-org/coupler/blob/main/packages/mcp-server/server.py">MCP server</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Coupler · Agent Tool Plane · <a href="https://madfam.io">MADFAM</a> · Innovaciones MADFAM SAS de CV</p>
+    <p style="margin-top:0.5rem">API: <a href="https://coupler-api.madfam.io">coupler-api.madfam.io</a> · AGPL-3.0-only</p>
+  </footer>
+</body>
+</html>

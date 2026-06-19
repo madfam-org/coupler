@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coupler-landing
+  namespace: coupler
+  labels:
+    app: coupler-landing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: coupler-landing
+  template:
+    metadata:
+      labels:
+        app: coupler-landing
+    spec:
+      containers:
+        - name: landing
+          image: ghcr.io/madfam-org/coupler-landing:latest
+          ports:
+            - containerPort: 8080
+              name: http
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 20m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: coupler-landing
+  namespace: coupler
+spec:
+  selector:
+    app: coupler-landing
+  ports:
+    - port: 8080
+      targetPort: http
+      name: http

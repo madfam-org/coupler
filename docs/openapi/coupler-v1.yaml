@@ -4,7 +4,7 @@ info:
   version: 0.1.0
   description: MADFAM Agent Tool Plane — tool registry and execute
 servers:
-  - url: https://api.coupler.madfam.io
+  - url: https://coupler-api.madfam.io
     description: Production (TBD)
   - url: http://localhost:8787
     description: Local gateway

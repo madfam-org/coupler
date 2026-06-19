@@ -1,12 +1,14 @@
-name: Staging — build & deploy gateway
+name: Staging — build & deploy
 
 on:
   push:
     branches: [main]
     paths:
       - "apps/gateway/**"
+      - "apps/landing/**"
       - "connectors/**"
       - "k8s/**"
+      - "scripts/**"
       - ".github/workflows/staging-deploy.yml"
       - "!k8s/overlays/staging/kustomization.yaml"
   workflow_dispatch:
@@ -22,7 +24,6 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: madfam-org/coupler-gateway
 
 permissions:
   contents: write
@@ -30,16 +31,11 @@ permissions:
   id-token: write
 
 jobs:
-  build:
-    name: Build gateway image
+  build-gateway:
+    name: Build gateway
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-      id-token: write
     outputs:
       digest: ${{ steps.push.outputs.digest }}
-      short: ${{ steps.sha.outputs.short }}
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
@@ -57,38 +53,53 @@ jobs:
           file: apps/gateway/Dockerfile
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging-${{ steps.sha.outputs.short }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+            ${{ env.REGISTRY }}/madfam-org/coupler-gateway:staging-${{ steps.sha.outputs.short }}
+          cache-from: type=gha,scope=gateway
+          cache-to: type=gha,scope=gateway,mode=max
+
+  build-landing:
+    name: Build landing
+    runs-on: ubuntu-latest
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: sha
+        run: echo "short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+      - id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/landing/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/madfam-org/coupler-landing:staging-${{ steps.sha.outputs.short }}
+          cache-from: type=gha,scope=landing
+          cache-to: type=gha,scope=landing,mode=max
 
   update-staging:
-    name: Patch staging overlay digest
-    needs: build
+    name: Patch staging overlay digests
+    needs: [build-gateway, build-landing]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Patch kustomization.yaml
+      - name: Patch digests
         run: |
-          DIGEST="${{ needs.build.outputs.digest }}"
-          SHORT="${{ needs.build.outputs.short }}"
+          SHORT="$(git rev-parse --short HEAD)"
           FILE="k8s/overlays/staging/kustomization.yaml"
-          python3 <<PY
-          import re, pathlib
-          path = pathlib.Path("$FILE")
-          digest = "${{ needs.build.outputs.digest }}"
-          text = path.read_text()
-          if not digest.startswith("sha256:"):
-              raise SystemExit(f"invalid digest: {digest!r}")
-          text, n = re.subn(r'(digest:\s+)sha256:[a-f0-9]+', r'\1' + digest, text, count=1)
-          if n != 1:
-              raise SystemExit(f"digest line not patched (matches={n})")
-          path.write_text(text)
-          PY
+          python3 scripts/patch-kustomize-digest.py "$FILE" ghcr.io/madfam-org/coupler-gateway "${{ needs.build-gateway.outputs.digest }}"
+          python3 scripts/patch-kustomize-digest.py "$FILE" ghcr.io/madfam-org/coupler-landing "${{ needs.build-landing.outputs.digest }}"
           git config user.name "coupler-bot"
           git config user.email "bot@madfam.io"
           git add "$FILE"
-          git commit -m "deploy(staging): coupler-gateway $SHORT"
+          git commit -m "deploy(staging): gateway+landing $SHORT"
           git pull --rebase origin main
           git push

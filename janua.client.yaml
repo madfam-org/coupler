@@ -7,7 +7,7 @@ grant_types:
   - client_credentials
   - authorization_code
 redirect_uris:
-  - https://api.coupler.madfam.io/oauth/callback
+  - https://coupler-api.madfam.io/oauth/callback
 post_logout_redirect_uris:
   - https://coupler.madfam.io
 audiences:

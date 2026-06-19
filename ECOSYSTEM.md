@@ -14,9 +14,10 @@ Coupler is MADFAM's fourth platform: Composio-class capabilities (tool catalog, 
 
 | Service | Public domain | Container port |
 |---------|---------------|----------------|
-| `coupler-gateway` | `api.coupler.madfam.io` (TBD at onboard) | 8787 |
+| `coupler-gateway` | `coupler-api.madfam.io` | 8787 |
+| `coupler-landing` | `coupler.madfam.io` | 8080 |
 
-**Kubernetes namespace:** `coupler` (pending Enclii onboard)
+**Kubernetes namespace:** `coupler`
 
 ### Upstream dependencies
 
