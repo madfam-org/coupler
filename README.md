@@ -22,7 +22,7 @@
 
 **Public:** [coupler.madfam.io](https://coupler.madfam.io) · API: [coupler-api.madfam.io](https://coupler-api.madfam.io)
 
-See [docs/IMPLEMENTATION_ROADMAP.md](docs/IMPLEMENTATION_ROADMAP.md) and [docs/SELVA_TOOLING_AUDIT.md](docs/SELVA_TOOLING_AUDIT.md).
+See [docs/SPRINT_2026-06-19_WRAPUP.md](docs/SPRINT_2026-06-19_WRAPUP.md), [docs/IMPLEMENTATION_ROADMAP.md](docs/IMPLEMENTATION_ROADMAP.md), and [docs/SELVA_TOOLING_AUDIT.md](docs/SELVA_TOOLING_AUDIT.md).
 
 ## Architecture
 

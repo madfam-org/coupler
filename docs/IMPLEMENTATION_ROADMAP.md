@@ -8,11 +8,11 @@
 | Phase | Scope | Status |
 |-------|-------|--------|
 | **P0** | Repo, gateway stubs, manifests, MCP, CI | ✅ Done |
-| **P1** | Janua ConnectedAccount + token delegation | 🚧 This sprint |
-| **P2** | Live GitHub + Slack execute | 🚧 This sprint |
-| **P3** | Selva `CouplerToolBackend` + feature flag | 🚧 This sprint |
+| **P1** | Janua ConnectedAccount + token delegation | ✅ Done (2026-06-19 sprint) |
+| **P2** | Live GitHub + Slack execute | ✅ Done (2026-06-19 sprint) |
+| **P3** | Selva `CouplerToolBackend` + feature flag | ✅ Done (P3a; P3b worker JWT pending) |
 | **P4** | Selva SaaS refactor + `madfam.ops.*` Enclii proxy | Planned |
-| **P5** | Staging synthetics, Enclii onboard, prod domain | Planned |
+| **P5** | Staging synthetics, Enclii onboard, prod domain | 🚧 Partial (gateway prod; onboard pending) |
 
 ## P0 deliverables (complete)
 
@@ -80,3 +80,4 @@
 | `COUPLER_INTEGRATION.md` | selva-office |
 | `SELVA_TOOLING_AUDIT.md` | coupler (this repo) |
 | `SEPARATION_OF_CONCERNS.md` | coupler (this repo) |
+| `SPRINT_2026-06-19_WRAPUP.md` | coupler (this repo) |
