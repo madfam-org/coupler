@@ -14,13 +14,28 @@ from pathlib import Path
 from typing import Any
 
 GATEWAY_URL = os.environ.get("COUPLER_GATEWAY_URL", "http://localhost:8787").rstrip("/")
+USER_JWT = os.environ.get("COUPLER_USER_JWT", "").strip()
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CONNECTORS_DIR = Path(os.environ.get("COUPLER_CONNECTORS_DIR", REPO_ROOT / "connectors"))
 
 
+def _gateway_headers(extra: dict[str, str] | None = None) -> dict[str, str]:
+    headers = {"Content-Type": "application/json"}
+    if USER_JWT:
+        headers["Authorization"] = f"Bearer {USER_JWT}"
+    if extra:
+        headers.update(extra)
+    return headers
+
+
 def load_tools() -> list[dict[str, Any]]:
     try:
-        with urllib.request.urlopen(f"{GATEWAY_URL}/v1/tools", timeout=3) as resp:
+        req = urllib.request.Request(
+            f"{GATEWAY_URL}/v1/tools",
+            headers=_gateway_headers(),
+            method="GET",
+        )
+        with urllib.request.urlopen(req, timeout=3) as resp:
             data = json.loads(resp.read().decode())
             return data.get("tools", [])
     except (urllib.error.URLError, TimeoutError, json.JSONDecodeError):
@@ -79,7 +94,7 @@ def gateway_execute(tool: str, arguments: dict[str, Any], dry_run: bool = True) 
     req = urllib.request.Request(
         f"{GATEWAY_URL}/v1/tools/execute",
         data=body,
-        headers={"Content-Type": "application/json"},
+        headers=_gateway_headers(),
         method="POST",
     )
     with urllib.request.urlopen(req, timeout=10) as resp:
@@ -90,9 +105,12 @@ def handle_call(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
     if name == "coupler_search_tools":
         q = arguments.get("query", "")
         try:
-            with urllib.request.urlopen(
-                f"{GATEWAY_URL}/v1/tools/search?q={urllib.parse.quote(q)}", timeout=3
-            ) as resp:
+            req = urllib.request.Request(
+                f"{GATEWAY_URL}/v1/tools/search?q={urllib.parse.quote(q)}",
+                headers=_gateway_headers(),
+                method="GET",
+            )
+            with urllib.request.urlopen(req, timeout=3) as resp:
                 return json.loads(resp.read().decode())
         except Exception:
             tools = load_tools()
