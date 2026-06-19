@@ -1,0 +1,70 @@
+openapi: 3.1.0
+info:
+  title: Coupler API
+  version: 0.1.0
+  description: MADFAM Agent Tool Plane — tool registry and execute
+servers:
+  - url: https://api.coupler.madfam.io
+    description: Production (TBD)
+  - url: http://localhost:8787
+    description: Local gateway
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  version:
+                    type: string
+  /v1/tools:
+    get:
+      summary: List registered tools
+      responses:
+        '200':
+          description: Tool catalog
+  /v1/tools/search:
+    get:
+      summary: Search tools by query
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Matching tools
+  /v1/tools/execute:
+    post:
+      summary: Execute a tool (dry_run until Janua P1)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tool]
+              properties:
+                tool:
+                  type: string
+                arguments:
+                  type: object
+                dry_run:
+                  type: boolean
+                connection_id:
+                  type: string
+      responses:
+        '200':
+          description: Execute result or dry-run plan
+        '401':
+          description: Missing or invalid JWT
+        '501':
+          description: Live execute not yet available

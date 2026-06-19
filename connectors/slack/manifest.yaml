@@ -1,0 +1,35 @@
+connector: slack
+version: "0.1.0"
+display_name: Slack
+description: Slack messaging via delegated OAuth
+auth:
+  type: oauth2
+  janua_provider: slack
+  scopes:
+    - channels:read
+    - chat:write
+    - users:read
+tools:
+  - name: coupler.slack.post_message
+    description: Post a message to a Slack channel
+    parameters:
+      type: object
+      required: [channel, text]
+      properties:
+        channel:
+          type: string
+        text:
+          type: string
+        thread_ts:
+          type: string
+      additionalProperties: false
+  - name: coupler.slack.list_channels
+    description: List channels visible to the authenticated user
+    parameters:
+      type: object
+      properties:
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 200
+      additionalProperties: false

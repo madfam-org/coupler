@@ -1,0 +1,36 @@
+# Enclii onboard manifest — Coupler Agent Tool Plane
+# See: enclii/docs/strategy/AGENT_TOOL_PLANE.md
+apiVersion: enclii.madfam.io/v1
+kind: Project
+metadata:
+  name: coupler
+  org: madfam-org
+  description: MADFAM Agent Tool Plane — delegated SaaS tools, MCP, sandbox, triggers
+  license: AGPL-3.0-only
+  repository: https://github.com/madfam-org/coupler
+spec:
+  namespace: coupler
+  services:
+    - name: coupler-gateway
+      path: apps/gateway
+      dockerfile: apps/gateway/Dockerfile
+      port: 8787
+      health_path: /health
+      domains:
+        - host: api.coupler.madfam.io
+          primary: true
+      env:
+        - name: COUPLER_JANUA_ISSUER
+          value: https://auth.madfam.io
+        - name: COUPLER_JANUA_AUDIENCE
+          value: coupler-api
+        - name: COUPLER_CONNECTORS_DIR
+          value: /connectors
+        - name: COUPLER_AUTH_REQUIRED
+          value: "true"
+      secrets: []
+  dependencies:
+    - platform: janua
+      reason: JWT verification and ConnectedAccount token delegation
+    - platform: enclii
+      reason: deploy and madfam.ops.* operator proxy (Phase 4)

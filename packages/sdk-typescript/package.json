@@ -1,0 +1,14 @@
+{
+  "name": "@madfam/coupler",
+  "version": "0.1.0",
+  "description": "MADFAM Coupler Agent Tool Plane — TypeScript SDK (Phase 0 stub)",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "check": "tsc --noEmit"
+  },
+  "files": ["dist"],
+  "license": "AGPL-3.0-only"
+}

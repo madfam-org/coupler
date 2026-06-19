@@ -1,0 +1,48 @@
+connector: github
+version: "0.1.0"
+display_name: GitHub
+description: GitHub repository and issue operations via delegated OAuth
+auth:
+  type: oauth2
+  janua_provider: github
+  scopes:
+    - repo
+    - read:user
+tools:
+  - name: coupler.github.list_repos
+    description: List repositories for the authenticated user
+    parameters:
+      type: object
+      properties:
+        visibility:
+          type: string
+          enum: [all, public, private]
+      additionalProperties: false
+  - name: coupler.github.get_issue
+    description: Get a single issue by number
+    parameters:
+      type: object
+      required: [owner, repo, number]
+      properties:
+        owner:
+          type: string
+        repo:
+          type: string
+        number:
+          type: integer
+      additionalProperties: false
+  - name: coupler.github.create_issue
+    description: Create an issue in a repository
+    parameters:
+      type: object
+      required: [owner, repo, title]
+      properties:
+        owner:
+          type: string
+        repo:
+          type: string
+        title:
+          type: string
+        body:
+          type: string
+      additionalProperties: false

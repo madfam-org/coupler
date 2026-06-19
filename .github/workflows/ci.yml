@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  GO_VERSION: "1.22"
+
+jobs:
+  gateway:
+    name: Gateway (Go)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/gateway
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: apps/gateway/go.sum
+      - name: Download modules
+        run: go mod download
+      - name: Test
+        run: go test ./...
+      - name: Build
+        run: go build -o /dev/null ./cmd/gateway
+
+  mcp-server:
+    name: MCP server (Python)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax check
+        run: python3 -m py_compile packages/mcp-server/server.py
+
+  sdk-typescript:
+    name: SDK (TypeScript)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/sdk-typescript
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install -g typescript@5
+      - run: npm run check
