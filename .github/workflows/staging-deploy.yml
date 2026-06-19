@@ -26,11 +26,16 @@ env:
 permissions:
   contents: write
   packages: write
+  id-token: write
 
 jobs:
   build:
     name: Build gateway image
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
     outputs:
       digest: ${{ steps.push.outputs.digest }}
       short: ${{ steps.sha.outputs.short }}
