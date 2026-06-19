@@ -81,3 +81,4 @@
 | `SELVA_TOOLING_AUDIT.md` | coupler (this repo) |
 | `SEPARATION_OF_CONCERNS.md` | coupler (this repo) |
 | `SPRINT_2026-06-19_WRAPUP.md` | coupler (this repo) |
+| `ECOSYSTEM_THIRD_PARTY_PROVIDER_AUDIT.md` | internal-devops |
