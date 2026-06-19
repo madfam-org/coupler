@@ -7,4 +7,4 @@ resources:
 images:
   - name: ghcr.io/madfam-org/coupler-gateway
     newName: ghcr.io/madfam-org/coupler-gateway
-    digest: sha256:e3228727b0eea474e91c8053b0e0264e4de8185b755673f8f04d8f6828d3f650
+    digest: sha256:56d5d0e2b6cd555b584cf62d3831e68c1da4c935b78708d8d1aa36333dcc21e8
