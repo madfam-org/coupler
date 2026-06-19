@@ -47,7 +47,7 @@ jobs:
             DIGEST=$(python3 - <<'PY'
           import re, pathlib
           text = pathlib.Path("k8s/overlays/staging/kustomization.yaml").read_text()
-          m = re.search(r'name:\s+ghcr\.io/madfam-org/coupler-gateway\n\s+digest:\s+(sha256:[a-f0-9]+)', text)
+          m = re.search(r'digest:\s+(sha256:[a-f0-9]+)', text)
           if not m: raise SystemExit(1)
           print(m.group(1))
           PY
@@ -94,11 +94,9 @@ jobs:
           path = pathlib.Path("$FILE")
           digest = os.environ["DIGEST"]
           text = path.read_text()
-          text = re.sub(
-              r'(name:\s+ghcr\.io/madfam-org/coupler-gateway\n\s+digest:\s+)sha256:[a-f0-9]+',
-              r'\g<1>' + digest,
-              text,
-          )
+          text, n = re.subn(r'(digest:\s+)sha256:[a-f0-9]+', r'\1' + digest, text, count=1)
+          if n != 1:
+              raise SystemExit(f"digest line not patched (matches={n})")
           path.write_text(text)
           PY
           git config user.name "coupler-bot"

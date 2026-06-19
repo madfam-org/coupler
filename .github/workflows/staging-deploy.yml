@@ -75,19 +75,19 @@ jobs:
           SHORT="${{ needs.build.outputs.short }}"
           FILE="k8s/overlays/staging/kustomization.yaml"
           python3 <<PY
-          import re, pathlib, os
+          import re, pathlib
           path = pathlib.Path("$FILE")
           digest = "${{ needs.build.outputs.digest }}"
           text = path.read_text()
-          text = re.sub(
-              r'(name:\s+ghcr\.io/madfam-org/coupler-gateway\n\s+digest:\s+)sha256:[a-f0-9]+',
-              r'\1' + digest,
-              text,
-          )
+          if not digest.startswith("sha256:"):
+              raise SystemExit(f"invalid digest: {digest!r}")
+          text, n = re.subn(r'(digest:\s+)sha256:[a-f0-9]+', r'\1' + digest, text, count=1)
+          if n != 1:
+              raise SystemExit(f"digest line not patched (matches={n})")
           path.write_text(text)
           PY
           git config user.name "coupler-bot"
           git config user.email "bot@madfam.io"
           git add "$FILE"
-          git commit -m "deploy(staging): coupler-gateway $SHORT" || exit 0
+          git commit -m "deploy(staging): coupler-gateway $SHORT"
           git push
