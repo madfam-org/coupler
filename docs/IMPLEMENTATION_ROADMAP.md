@@ -10,7 +10,7 @@
 | **P0** | Repo, gateway stubs, manifests, MCP, CI | ✅ Done |
 | **P1** | Janua ConnectedAccount + token delegation | ✅ Done (2026-06-19 sprint) |
 | **P2** | Live GitHub + Slack execute | ✅ Done (2026-06-19 sprint) |
-| **P3** | Selva `CouplerToolBackend` + feature flag | ✅ Done (P3a; P3b worker JWT pending) |
+| **P3** | Selva `CouplerToolBackend` + feature flag | ✅ Done (P3a + P3b worker JWT) |
 | **P4** | Selva SaaS refactor + `madfam.ops.*` Enclii proxy | Planned |
 | **P5** | Staging synthetics, Enclii onboard, prod domain | 🚧 Partial (gateway prod; onboard pending) |
 
