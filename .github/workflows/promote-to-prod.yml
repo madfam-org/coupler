@@ -106,4 +106,5 @@ jobs:
 
           Reason: $REASON
           Promoted-by: $ACTOR"
+          git pull --rebase origin main
           git push

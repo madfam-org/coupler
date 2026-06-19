@@ -90,4 +90,5 @@ jobs:
           git config user.email "bot@madfam.io"
           git add "$FILE"
           git commit -m "deploy(staging): coupler-gateway $SHORT"
+          git pull --rebase origin main
           git push
