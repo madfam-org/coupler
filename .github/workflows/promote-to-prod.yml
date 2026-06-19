@@ -1,0 +1,111 @@
+name: Promote staging -> prod
+
+on:
+  workflow_dispatch:
+    inputs:
+      digest:
+        description: "Staging digest (sha256:...). Blank = read staging overlay."
+        required: false
+        type: string
+      reason:
+        description: "Why promoting now (required)"
+        required: true
+        type: string
+      break_glass_without_soak:
+        description: "Bypass soak window for initial bootstrap"
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: coupler-prod-promote
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate promotion
+    runs-on: ubuntu-latest
+    outputs:
+      digest: ${{ steps.resolve.outputs.digest }}
+      short: ${{ steps.resolve.outputs.short }}
+      should_promote: ${{ steps.resolve.outputs.should_promote }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 50
+      - id: resolve
+        env:
+          INPUT_DIGEST: ${{ inputs.digest }}
+          BREAK_GLASS: ${{ inputs.break_glass_without_soak }}
+          MIN_SOAK_MIN: ${{ vars.MIN_SOAK_MINUTES || '30' }}
+        run: |
+          set -euo pipefail
+          IMAGE="ghcr.io/madfam-org/coupler-gateway"
+          if [[ -n "$INPUT_DIGEST" ]]; then
+            DIGEST="$INPUT_DIGEST"
+          else
+            DIGEST=$(python3 - <<'PY'
+          import re, pathlib
+          text = pathlib.Path("k8s/overlays/staging/kustomization.yaml").read_text()
+          m = re.search(r'name:\s+ghcr\.io/madfam-org/coupler-gateway\n\s+digest:\s+(sha256:[a-f0-9]+)', text)
+          if not m: raise SystemExit(1)
+          print(m.group(1))
+          PY
+            )
+          fi
+          if [[ "$DIGEST" == "sha256:0000000000000000000000000000000000000000000000000000000000000000" ]]; then
+            echo "::error::Staging digest is placeholder"
+            exit 1
+          fi
+          if [[ "$BREAK_GLASS" != "true" ]]; then
+            STAGING_COMMIT=$(git log -n 50 --format="%H" -- k8s/overlays/staging/kustomization.yaml | head -1)
+            STAGING_TIME=$(git show -s --format=%ct "$STAGING_COMMIT")
+            AGE_MIN=$(( ($(date +%s) - STAGING_TIME) / 60 ))
+            if [[ "$AGE_MIN" -lt "$MIN_SOAK_MIN" ]]; then
+              echo "::error::Soak ${AGE_MIN}min < ${MIN_SOAK_MIN}min"
+              exit 1
+            fi
+          fi
+          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+          echo "short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "should_promote=true" >> "$GITHUB_OUTPUT"
+
+  promote:
+    name: Write prod kustomization
+    needs: validate
+    if: needs.validate.outputs.should_promote == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.MADFAM_BOT_PAT || secrets.GITHUB_TOKEN }}
+      - name: Patch prod overlay
+        env:
+          DIGEST: ${{ needs.validate.outputs.digest }}
+          SHORT: ${{ needs.validate.outputs.short }}
+          REASON: ${{ inputs.reason }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          FILE="k8s/overlays/production/kustomization.yaml"
+          python3 <<PY
+          import os, re, pathlib
+          path = pathlib.Path("$FILE")
+          digest = os.environ["DIGEST"]
+          text = path.read_text()
+          text = re.sub(
+              r'(name:\s+ghcr\.io/madfam-org/coupler-gateway\n\s+digest:\s+)sha256:[a-f0-9]+',
+              r'\g<1>' + digest,
+              text,
+          )
+          path.write_text(text)
+          PY
+          git config user.name "coupler-bot"
+          git config user.email "bot@madfam.io"
+          git add "$FILE"
+          git commit -m "deploy(prod): coupler-gateway $SHORT
+
+          Reason: $REASON
+          Promoted-by: $ACTOR"
+          git push

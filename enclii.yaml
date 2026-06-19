@@ -10,6 +10,7 @@ metadata:
   repository: https://github.com/madfam-org/coupler
 spec:
   namespace: coupler
+  manifest_path: k8s/overlays/production
   services:
     - name: coupler-gateway
       path: apps/gateway

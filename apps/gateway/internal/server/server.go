@@ -7,18 +7,20 @@ import (
 	"strings"
 
 	"github.com/madfam-org/coupler/apps/gateway/internal/auth"
+	"github.com/madfam-org/coupler/apps/gateway/internal/executor"
 	"github.com/madfam-org/coupler/apps/gateway/internal/registry"
 )
 
-const version = "0.1.0-phase0"
+const version = "0.2.0"
 
 type Server struct {
 	reg      *registry.Registry
 	verifier *auth.Verifier
+	exec     *executor.Executor
 }
 
 func New(reg *registry.Registry, verifier *auth.Verifier) *Server {
-	return &Server{reg: reg, verifier: verifier}
+	return &Server{reg: reg, verifier: verifier, exec: executor.New()}
 }
 
 func (s *Server) Handler() http.Handler {
@@ -35,24 +37,19 @@ func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 		"status":  "ok",
 		"service": "coupler-gateway",
 		"version": version,
-		"phase":   "0",
+		"phase":   "2",
 	})
 }
 
 func (s *Server) handleListTools(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]any{
-		"tools": s.reg.List(),
-		"count": len(s.reg.List()),
-	})
+	tools := s.reg.List()
+	writeJSON(w, http.StatusOK, map[string]any{"tools": tools, "count": len(tools)})
 }
 
 func (s *Server) handleSearchTools(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
-	writeJSON(w, http.StatusOK, map[string]any{
-		"query": q,
-		"tools": s.reg.Search(q),
-		"count": len(s.reg.Search(q)),
-	})
+	matched := s.reg.Search(q)
+	writeJSON(w, http.StatusOK, map[string]any{"query": q, "tools": matched, "count": len(matched)})
 }
 
 type executeRequest struct {
@@ -82,26 +79,45 @@ func (s *Server) handleExecute(w http.ResponseWriter, r *http.Request) {
 
 	if req.DryRun {
 		writeJSON(w, http.StatusOK, map[string]any{
-			"dry_run": true,
-			"tool":    tool.Name,
+			"dry_run":   true,
+			"tool":      tool.Name,
 			"connector": tool.Connector,
 			"plan": map[string]any{
 				"arguments":     req.Arguments,
 				"connection_id": req.ConnectionID,
 				"auth":          "janua_token_delegation",
 			},
-			"message": "Dry run OK — live execute blocked until Janua ConnectedAccount delegation (P1)",
 		})
 		return
 	}
 
-	// Live execute requires Janua P1
-	writeJSON(w, http.StatusNotImplemented, map[string]any{
-		"error":   "live_execute_not_available",
-		"tool":    tool.Name,
-		"phase":   "0",
-		"blocker": "janua_connected_account_delegation",
-		"hint":    "Set dry_run=true or wait for Janua P1",
+	claims, hasClaims := auth.ClaimsFromContext(r.Context())
+	if !hasClaims || claims.Sub == "" {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "user_jwt_required"})
+		return
+	}
+
+	result, err := s.exec.Execute(r.Context(), tool, executor.Request{
+		Tool:         req.Tool,
+		Arguments:    req.Arguments,
+		ConnectionID: req.ConnectionID,
+		ActingUserID: claims.Sub,
+		UserJWT:      auth.UserJWTFromContext(r.Context()),
+	})
+	if err != nil {
+		writeJSON(w, http.StatusBadGateway, map[string]any{
+			"error":   "execute_failed",
+			"tool":    tool.Name,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"dry_run": false,
+		"tool":    result.Tool,
+		"connector": result.Connector,
+		"result":  result.Output,
 	})
 }
 
@@ -115,12 +131,7 @@ func ConnectorsDir() string {
 	if v := os.Getenv("COUPLER_CONNECTORS_DIR"); v != "" {
 		return v
 	}
-	// monorepo default: repo root connectors/
-	candidates := []string{
-		"connectors",
-		"../../connectors",
-		"../../../connectors",
-	}
+	candidates := []string{"connectors", "../../connectors", "../../../connectors"}
 	for _, c := range candidates {
 		if st, err := os.Stat(c); err == nil && st.IsDir() {
 			return c

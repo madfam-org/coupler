@@ -27,8 +27,8 @@ MADFAM's **Agent Tool Plane (ATP)**. Fourth platform alongside Enclii, Janua, an
 
 - **P0:** CI green, gateway `/health`, manifests load, MCP lists tools
 - **P1 (janua):** Token delegation API live
-- **P2:** Live execute for GitHub + Slack on staging
-- **P3:** MCP execute from Cursor against staging
+- **P2:** Live execute for GitHub + Slack
+- **P3:** Selva CouplerToolBackend (feature-flagged)
 
 ## Auth
 

@@ -1,0 +1,87 @@
+name: Staging — build & deploy gateway
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/gateway/**"
+      - "connectors/**"
+      - "k8s/**"
+      - "!k8s/overlays/staging/kustomization.yaml"
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Reason for manual staging deploy"
+        required: true
+        type: string
+
+concurrency:
+  group: coupler-staging
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: madfam-org/coupler-gateway
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build:
+    name: Build gateway image
+    runs-on: ubuntu-latest
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+      short: ${{ steps.sha.outputs.short }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.MADFAM_BOT_PAT || secrets.GITHUB_TOKEN }}
+      - id: sha
+        run: echo "short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+      - id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/gateway/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging-${{ steps.sha.outputs.short }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  update-staging:
+    name: Patch staging overlay digest
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.MADFAM_BOT_PAT || secrets.GITHUB_TOKEN }}
+      - name: Patch kustomization.yaml
+        run: |
+          DIGEST="${{ needs.build.outputs.digest }}"
+          SHORT="${{ needs.build.outputs.short }}"
+          FILE="k8s/overlays/staging/kustomization.yaml"
+          python3 <<PY
+          import re, pathlib, os
+          path = pathlib.Path("$FILE")
+          digest = "${{ needs.build.outputs.digest }}"
+          text = path.read_text()
+          text = re.sub(
+              r'(name:\s+ghcr\.io/madfam-org/coupler-gateway\n\s+digest:\s+)sha256:[a-f0-9]+',
+              r'\1' + digest,
+              text,
+          )
+          path.write_text(text)
+          PY
+          git config user.name "coupler-bot"
+          git config user.email "bot@madfam.io"
+          git add "$FILE"
+          git commit -m "deploy(staging): coupler-gateway $SHORT" || exit 0
+          git push

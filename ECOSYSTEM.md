@@ -4,7 +4,7 @@
 
 **Pillar:** Intelligence / Agent tools  
 **Type:** platform  
-**Status:** bootstrap (Phase 0)
+**Status:** bootstrap → staging (P2 live execute shipped 2026-06-19)
 
 ## What this repo is
 

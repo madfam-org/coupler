@@ -40,6 +40,13 @@ spec:
               value: coupler-api
             - name: COUPLER_AUTH_REQUIRED
               value: "true"
+            - name: COUPLER_JANUA_API_URL
+              value: https://auth.madfam.io
+            - name: COUPLER_JANUA_SERVICE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: coupler-gateway-secrets
+                  key: janua-service-token
           livenessProbe:
             httpGet:
               path: /health

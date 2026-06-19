@@ -11,15 +11,16 @@
 
 ## Status
 
-**Phase 0 — Bootstrap** (this repo)
+**Phase 2 — Live execute** (GitHub + Slack via Janua delegation)
 
-- Gateway skeleton with `/health`, tool catalog from connector manifests, dry-run execute
-- MCP server stub (`packages/mcp-server`)
-- TypeScript SDK stub (`packages/sdk-typescript`)
-- Tier-1 connector manifests: GitHub, Slack
-- Enclii + Janua client bootstrap files
+- Gateway with JWKS auth, Janua delegation client, connector executor
+- MCP server + TypeScript SDK
+- Janua `ConnectedAccount` API (P1)
+- Selva `CouplerToolBackend` (P3a, feature-flagged)
 
-**Blocker for production execute:** Janua Phase 1 ConnectedAccount / token delegation ([janua COUPLER_PROGRAM](https://github.com/madfam-org/janua/blob/main/docs/COUPLER_PROGRAM.md)).
+**Next:** Enclii onboard, worker JWT wiring (P3b), Selva P4 SaaS refactor.
+
+See [docs/IMPLEMENTATION_ROADMAP.md](docs/IMPLEMENTATION_ROADMAP.md) and [docs/SELVA_TOOLING_AUDIT.md](docs/SELVA_TOOLING_AUDIT.md).
 
 ## Architecture
 
