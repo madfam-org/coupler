@@ -19,12 +19,17 @@ spec:
         - name: ghcr-credentials
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1000
+        runAsUser: 101
+        runAsGroup: 101
+        fsGroup: 101
         seccompProfile:
           type: RuntimeDefault
       containers:
         - name: landing
           securityContext:
+            runAsNonRoot: true
+            runAsUser: 101
+            runAsGroup: 101
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities:
@@ -37,6 +42,10 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
+            - name: cache
+              mountPath: /var/cache/nginx
+            - name: run
+              mountPath: /run
           livenessProbe:
             httpGet:
               path: /health
@@ -58,6 +67,10 @@ spec:
               memory: 128Mi
       volumes:
         - name: tmp
+          emptyDir: {}
+        - name: cache
+          emptyDir: {}
+        - name: run
           emptyDir: {}
 ---
 apiVersion: v1
