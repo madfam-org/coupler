@@ -83,6 +83,6 @@ spec:
   selector:
     app: coupler-landing
   ports:
-    - port: 8080
+    - port: 80
       targetPort: http
       name: http

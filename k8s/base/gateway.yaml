@@ -102,6 +102,6 @@ spec:
   selector:
     app: coupler-gateway
   ports:
-    - port: 8787
+    - port: 80
       targetPort: http
       name: http
