@@ -44,3 +44,13 @@ spec:
       reason: JWT verification and ConnectedAccount token delegation
     - platform: enclii
       reason: deploy and madfam.ops.* operator proxy (Phase 4)
+  network:
+    services:
+      - name: coupler-landing
+        port: 8080
+        ingress: [cloudflare-tunnel]
+        egress: [dns, https]
+      - name: coupler-gateway
+        port: 8787
+        ingress: [cloudflare-tunnel]
+        egress: [dns, https, janua]
