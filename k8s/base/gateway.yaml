@@ -23,6 +23,8 @@ spec:
       labels:
         app: coupler-gateway
     spec:
+      imagePullSecrets:
+        - name: ghcr-credentials
       containers:
         - name: gateway
           image: ghcr.io/madfam-org/coupler-gateway:latest

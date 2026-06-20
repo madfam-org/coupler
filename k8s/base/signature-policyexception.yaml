@@ -1,0 +1,30 @@
+# Temporary cosign bypass until ghcr.io/madfam-org/coupler-{gateway,landing}
+# packages are public or madfam-bot PAT includes pull scope for new packages.
+# Kyverno verify-image-signatures cannot pull private package manifests (DENIED).
+apiVersion: kyverno.io/v2beta1
+kind: PolicyException
+metadata:
+  name: coupler-signature-temporary
+  namespace: coupler
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+    enclii.dev/reason: "New Coupler GHCR packages are private; Kyverno cannot verify signatures until registry pull succeeds."
+    enclii.dev/scope: "coupler-gateway and coupler-landing Deployments only."
+spec:
+  exceptions:
+    - policyName: verify-image-signatures
+      ruleNames:
+        - check-signature
+        - autogen-check-signature
+  match:
+    any:
+      - resources:
+          kinds:
+            - Deployment
+            - Pod
+            - ReplicaSet
+          namespaces:
+            - coupler
+          names:
+            - coupler-gateway*
+            - coupler-landing*

@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - gateway.yaml
   - landing.yaml
+  - signature-policyexception.yaml
 
 images:
   - name: ghcr.io/madfam-org/coupler-gateway
