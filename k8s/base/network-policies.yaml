@@ -1,0 +1,118 @@
+# Cloudflare tunnel ingress + egress for Coupler workloads.
+# The coupler namespace already has enclii default-deny; these policies add explicit allows.
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: coupler-landing-ingress
+  namespace: coupler
+  labels:
+    app.kubernetes.io/managed-by: enclii
+    app.kubernetes.io/component: network-policy
+    enclii.dev/generated: "true"
+    enclii.dev/project: coupler
+spec:
+  podSelector:
+    matchLabels:
+      app: coupler-landing
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: cloudflare-tunnel
+      ports:
+        - protocol: TCP
+          port: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: coupler-landing-egress
+  namespace: coupler
+  labels:
+    app.kubernetes.io/managed-by: enclii
+    app.kubernetes.io/component: network-policy
+    enclii.dev/generated: "true"
+    enclii.dev/project: coupler
+spec:
+  podSelector:
+    matchLabels:
+      app: coupler-landing
+  policyTypes:
+    - Egress
+  egress:
+    - to: []
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to: []
+      ports:
+        - protocol: TCP
+          port: 443
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: coupler-gateway-ingress
+  namespace: coupler
+  labels:
+    app.kubernetes.io/managed-by: enclii
+    app.kubernetes.io/component: network-policy
+    enclii.dev/generated: "true"
+    enclii.dev/project: coupler
+spec:
+  podSelector:
+    matchLabels:
+      app: coupler-gateway
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: cloudflare-tunnel
+      ports:
+        - protocol: TCP
+          port: 8787
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: coupler-gateway-egress
+  namespace: coupler
+  labels:
+    app.kubernetes.io/managed-by: enclii
+    app.kubernetes.io/component: network-policy
+    enclii.dev/generated: "true"
+    enclii.dev/project: coupler
+spec:
+  podSelector:
+    matchLabels:
+      app: coupler-gateway
+  policyTypes:
+    - Egress
+  egress:
+    - to: []
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to: []
+      ports:
+        - protocol: TCP
+          port: 443
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: janua
+          podSelector:
+            matchLabels:
+              app: janua-api
+      ports:
+        - protocol: TCP
+          port: 8080

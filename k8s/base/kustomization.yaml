@@ -5,6 +5,7 @@ resources:
   - gateway.yaml
   - landing.yaml
   - signature-policyexception.yaml
+  - network-policies.yaml
 
 images:
   - name: ghcr.io/madfam-org/coupler-gateway
