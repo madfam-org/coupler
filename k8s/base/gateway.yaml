@@ -25,8 +25,19 @@ spec:
     spec:
       imagePullSecrets:
         - name: ghcr-credentials
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: gateway
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
           image: ghcr.io/madfam-org/coupler-gateway:latest
           ports:
             - containerPort: 8787
