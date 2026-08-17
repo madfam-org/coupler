@@ -26,6 +26,17 @@ survives an outage). Nauta 4xx → coupler answers 200 `refused_downstream`
 
 ## Operator setup (one-time)
 
+> **ORDER MATTERS — vault first, merge second.** External Secrets Operator
+> fails the WHOLE `coupler-gateway-secrets` object if a single referenced
+> property is missing from vault (nauta learned this as the N4 all-or-nothing
+> lesson). Write both vault properties (step 3) BEFORE merging the PR that
+> references them; the existing secret survives (`deletionPolicy: Retain`)
+> but refreshes stop until the properties exist. The same rule governs
+> nauta's `COUPLER_SERVICE_TOKEN`: its ExternalSecret line ships as a
+> follow-up AFTER the vault write, and until then nauta's ingest route
+> answers 503 by design.
+
+
 1. **Zoom Marketplace app** — [marketplace.zoom.us](https://marketplace.zoom.us)
    → Develop → Build App → **Server-to-Server OAuth** (any name, e.g.
    `madfam-coupler-triggers`). No scopes are needed for webhooks alone.
