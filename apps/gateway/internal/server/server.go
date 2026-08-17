@@ -9,6 +9,7 @@ import (
 	"github.com/madfam-org/coupler/apps/gateway/internal/auth"
 	"github.com/madfam-org/coupler/apps/gateway/internal/executor"
 	"github.com/madfam-org/coupler/apps/gateway/internal/registry"
+	"github.com/madfam-org/coupler/apps/gateway/internal/triggers"
 )
 
 const version = "0.2.0"
@@ -24,12 +25,19 @@ func New(reg *registry.Registry, verifier *auth.Verifier) *Server {
 }
 
 func (s *Server) Handler() http.Handler {
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /health", s.handleHealth)
-	mux.HandleFunc("GET /v1/tools", s.handleListTools)
-	mux.HandleFunc("GET /v1/tools/search", s.handleSearchTools)
-	mux.HandleFunc("POST /v1/tools/execute", s.handleExecute)
-	return s.verifier.Middleware(mux)
+	authed := http.NewServeMux()
+	authed.HandleFunc("GET /health", s.handleHealth)
+	authed.HandleFunc("GET /v1/tools", s.handleListTools)
+	authed.HandleFunc("GET /v1/tools/search", s.handleSearchTools)
+	authed.HandleFunc("POST /v1/tools/execute", s.handleExecute)
+
+	// Triggers mount OUTSIDE the janua middleware: a webhook authenticates a
+	// PROVIDER by signature, not a user by JWT, and each trigger handler
+	// fails closed on its own secret.
+	root := http.NewServeMux()
+	root.Handle("POST /v1/triggers/zoom", triggers.NewZoomHandlerFromEnv())
+	root.Handle("/", s.verifier.Middleware(authed))
+	return root
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {

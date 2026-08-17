@@ -11,14 +11,19 @@
 
 ## Status
 
-**Phase 2 — Live execute** (GitHub + Slack via Janua delegation)
+**Phase 2 — Live execute** (GitHub + Slack via Janua delegation) **+ first
+trigger** (Zoom → nauta time drafts; see [docs/TRIGGERS_ZOOM.md](docs/TRIGGERS_ZOOM.md))
 
 - Gateway with JWKS auth, Janua delegation client, connector executor
 - MCP server + TypeScript SDK
 - Janua `ConnectedAccount` API (P1)
 - Selva `CouplerToolBackend` (P3a, feature-flagged)
+- Triggers: `/v1/triggers/zoom` — provider-signature auth outside the JWT
+  middleware, meeting.ended relayed as draft time entries to nauta (D15:
+  machines get an inbox, not a pen)
 
-**Next:** Enclii onboard, worker JWT wiring (P3b), Selva P4 SaaS refactor.
+**Next:** Enclii onboard, worker JWT wiring (P3b), Selva P4 SaaS refactor,
+more trigger sources on the same lane.
 
 **Public:** [coupler.madfam.io](https://coupler.madfam.io) · API: [coupler-api.madfam.io](https://coupler-api.madfam.io)
 
