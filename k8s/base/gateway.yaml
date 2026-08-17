@@ -70,6 +70,22 @@ spec:
                   name: coupler-gateway-secrets
                   key: janua-service-token
                   optional: true
+            # Triggers (inbound webhooks). All optional at the pod level; each
+            # handler fails closed on its own missing secret.
+            - name: COUPLER_NAUTA_INGEST_URL
+              value: https://nauta.madfam.io/api/integrations/coupler/time-draft
+            - name: ZOOM_WEBHOOK_SECRET_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: coupler-gateway-secrets
+                  key: zoom-webhook-secret-token
+                  optional: true
+            - name: COUPLER_NAUTA_SERVICE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: coupler-gateway-secrets
+                  key: nauta-service-token
+                  optional: true
           livenessProbe:
             httpGet:
               path: /health
