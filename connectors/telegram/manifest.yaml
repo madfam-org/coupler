@@ -1,0 +1,42 @@
+connector: telegram
+version: "0.1.0"
+display_name: Telegram
+description: >-
+  Send Telegram messages via MADFAM's bot. Interim general-purpose
+  human-notification channel until the angelia Matrix bridge ships.
+auth:
+  # Telegram bots authenticate with a single static token minted once via
+  # BotFather — there is no per-user OAuth authorize flow to broker, so this
+  # does NOT go through Janua ConnectedAccount/token delegation like the
+  # oauth2 connectors above. The token is held server-side as a gateway
+  # secret (COUPLER_TELEGRAM_BOT_TOKEN) and shared by every caller; identity
+  # and scoping happen at the chat_id level, not per-connected-account.
+  # See docs/CONNECTOR_TELEGRAM.md for the full rationale.
+  type: static_token
+  token_env: COUPLER_TELEGRAM_BOT_TOKEN
+tools:
+  - name: coupler.telegram.send_message
+    description: Send a text message to a Telegram chat via the MADFAM bot
+    parameters:
+      type: object
+      required: [chat_id, text]
+      properties:
+        chat_id:
+          type: string
+          description: Telegram chat ID or @channelusername
+        text:
+          type: string
+          maxLength: 4096
+          description: Message body (Telegram hard-caps messages at 4096 chars)
+        parse_mode:
+          type: string
+          enum: [MarkdownV2, HTML]
+        disable_notification:
+          type: boolean
+      additionalProperties: false
+  - name: coupler.telegram.get_me
+    description: Verify the configured bot token is valid (zero-argument credential probe)
+    parameters:
+      type: object
+      properties: {}
+      additionalProperties: false

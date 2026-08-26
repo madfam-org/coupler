@@ -57,7 +57,8 @@ coupler/
 ├── packages/sdk-typescript/
 ├── connectors/
 │   ├── github/
-│   └── slack/
+│   ├── slack/
+│   └── telegram/
 ├── k8s/production/
 ├── docs/
 ├── enclii.yaml

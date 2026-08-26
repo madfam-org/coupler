@@ -86,15 +86,21 @@ func (s *Server) handleExecute(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.DryRun {
+		plan := map[string]any{
+			"arguments": req.Arguments,
+			"auth":      authMechanism(tool.Connector),
+		}
+		// connection_id is a janua ConnectedAccount concept — omit it from the
+		// plan for connectors (telegram) that never resolve one, rather than
+		// echoing an always-empty field that implies delegation is coming.
+		if tool.Connector != "telegram" {
+			plan["connection_id"] = req.ConnectionID
+		}
 		writeJSON(w, http.StatusOK, map[string]any{
 			"dry_run":   true,
 			"tool":      tool.Name,
 			"connector": tool.Connector,
-			"plan": map[string]any{
-				"arguments":     req.Arguments,
-				"connection_id": req.ConnectionID,
-				"auth":          "janua_token_delegation",
-			},
+			"plan":      plan,
 		})
 		return
 	}
@@ -127,6 +133,17 @@ func (s *Server) handleExecute(w http.ResponseWriter, r *http.Request) {
 		"connector": result.Connector,
 		"result":  result.Output,
 	})
+}
+
+// authMechanism reports the true credential path for a connector's dry-run
+// plan. Telegram uses a server-held static bot token (COUPLER_TELEGRAM_BOT_TOKEN,
+// see docs/CONNECTOR_TELEGRAM.md), never janua delegation — every other
+// connector still resolves a janua ConnectedAccount at execute time.
+func authMechanism(connector string) string {
+	if connector == "telegram" {
+		return "server_static_token"
+	}
+	return "janua_token_delegation"
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

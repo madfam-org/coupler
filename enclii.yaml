@@ -34,6 +34,7 @@ spec:
       secrets:
         - zoom-webhook-secret-token
         - nauta-service-token
+        - telegram-bot-token
     - name: coupler-landing
       path: apps/landing
       dockerfile: apps/landing/Dockerfile

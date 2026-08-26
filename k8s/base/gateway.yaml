@@ -86,6 +86,16 @@ spec:
                   name: coupler-gateway-secrets
                   key: nauta-service-token
                   optional: true
+            # Telegram connector (coupler.telegram.*): a static BotFather
+            # token, not a janua-delegated OAuth connector — see
+            # docs/CONNECTOR_TELEGRAM.md. Optional so the pod still starts,
+            # and the connector fails closed per-call, if unset.
+            - name: COUPLER_TELEGRAM_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: coupler-gateway-secrets
+                  key: telegram-bot-token
+                  optional: true
           livenessProbe:
             httpGet:
               path: /health

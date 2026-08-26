@@ -11,8 +11,9 @@
 
 ## Status
 
-**Phase 2 — Live execute** (GitHub + Slack via Janua delegation) **+ first
-trigger** (Zoom → nauta time drafts; see [docs/TRIGGERS_ZOOM.md](docs/TRIGGERS_ZOOM.md))
+**Phase 2 — Live execute** (GitHub + Slack via Janua delegation, Telegram via
+server-held static token) **+ first trigger** (Zoom → nauta time drafts; see
+[docs/TRIGGERS_ZOOM.md](docs/TRIGGERS_ZOOM.md))
 
 - Gateway with JWKS auth, Janua delegation client, connector executor
 - MCP server + TypeScript SDK
@@ -21,6 +22,9 @@ trigger** (Zoom → nauta time drafts; see [docs/TRIGGERS_ZOOM.md](docs/TRIGGERS
 - Triggers: `/v1/triggers/zoom` — provider-signature auth outside the JWT
   middleware, meeting.ended relayed as draft time entries to nauta (D15:
   machines get an inbox, not a pen)
+- Connectors: `coupler.telegram.*` — interim general-purpose Telegram
+  notification tool (send_message, get_me) ahead of the angelia Matrix
+  bridge; see [docs/CONNECTOR_TELEGRAM.md](docs/CONNECTOR_TELEGRAM.md)
 
 **Next:** Enclii onboard, worker JWT wiring (P3b), Selva P4 SaaS refactor,
 more trigger sources on the same lane.
@@ -45,6 +49,9 @@ curl -s http://localhost:8787/v1/tools | jq
 curl -s -X POST http://localhost:8787/v1/tools/execute \
   -H 'Content-Type: application/json' \
   -d '{"tool":"coupler.github.list_repos","dry_run":true,"arguments":{}}' | jq
+curl -s -X POST http://localhost:8787/v1/tools/execute \
+  -H 'Content-Type: application/json' \
+  -d '{"tool":"coupler.telegram.send_message","dry_run":true,"arguments":{"chat_id":"123","text":"hi"}}' | jq
 
 # MCP server (stdio — for Cursor)
 python3 packages/mcp-server/server.py
