@@ -62,11 +62,34 @@ jobs:
         with:
           cosign-release: v2.5.3
 
+      # Retry the sign call: GitHub's OIDC endpoint transiently returns
+      # non-JSON ("invalid character 'u' looking for beginning of value"),
+      # which killed crea-frontend run 33010085743 on 2026-08-26 after the
+      # image was already built and pushed, stranding the digest pin.
       - name: Sign gateway image digest
+        id: sign
         env:
-          IMAGE: ${{ env.REGISTRY }}/madfam-org/coupler-gateway
-          DIGEST: ${{ steps.push.outputs.digest }}
-        run: cosign sign --yes "$IMAGE@$DIGEST"
+          IMAGE_REF: ${{ env.REGISTRY }}/madfam-org/coupler-gateway@${{ steps.push.outputs.digest }}
+        run: |
+          set -euo pipefail
+          signed=0
+          for wait in 0 20 60; do
+            if [ "$wait" -gt 0 ]; then
+              echo "::warning::cosign sign failed for ${IMAGE_REF} (transient OIDC/Fulcio/Rekor?); retrying in ${wait}s..."
+              sleep "$wait"
+            fi
+            if cosign sign --yes "${IMAGE_REF}"; then
+              signed=1
+              break
+            fi
+          done
+          if [ "$signed" -ne 1 ]; then
+            echo "::error::cosign sign failed 3 times for ${IMAGE_REF}."
+            echo "::error::The image was BUILT AND PUSHED but is NOT signed, so it will not be"
+            echo "::error::pinned and ArgoCD will not roll it: the live host is still serving the"
+            echo "::error::PREVIOUS build even though this commit is on main. Rerun the failed jobs."
+            exit 1
+          fi
 
   build-landing:
     name: Build landing
@@ -99,11 +122,34 @@ jobs:
         with:
           cosign-release: v2.5.3
 
+      # Retry the sign call: GitHub's OIDC endpoint transiently returns
+      # non-JSON ("invalid character 'u' looking for beginning of value"),
+      # which killed crea-frontend run 33010085743 on 2026-08-26 after the
+      # image was already built and pushed, stranding the digest pin.
       - name: Sign landing image digest
+        id: sign
         env:
-          IMAGE: ${{ env.REGISTRY }}/madfam-org/coupler-landing
-          DIGEST: ${{ steps.push.outputs.digest }}
-        run: cosign sign --yes "$IMAGE@$DIGEST"
+          IMAGE_REF: ${{ env.REGISTRY }}/madfam-org/coupler-landing@${{ steps.push.outputs.digest }}
+        run: |
+          set -euo pipefail
+          signed=0
+          for wait in 0 20 60; do
+            if [ "$wait" -gt 0 ]; then
+              echo "::warning::cosign sign failed for ${IMAGE_REF} (transient OIDC/Fulcio/Rekor?); retrying in ${wait}s..."
+              sleep "$wait"
+            fi
+            if cosign sign --yes "${IMAGE_REF}"; then
+              signed=1
+              break
+            fi
+          done
+          if [ "$signed" -ne 1 ]; then
+            echo "::error::cosign sign failed 3 times for ${IMAGE_REF}."
+            echo "::error::The image was BUILT AND PUSHED but is NOT signed, so it will not be"
+            echo "::error::pinned and ArgoCD will not roll it: the live host is still serving the"
+            echo "::error::PREVIOUS build even though this commit is on main. Rerun the failed jobs."
+            exit 1
+          fi
 
   update-staging:
     name: Patch staging overlay digests
@@ -114,6 +160,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Patch digests
+        id: pin
         run: |
           SHORT="$(git rev-parse --short HEAD)"
           FILE="k8s/overlays/staging/kustomization.yaml"
@@ -125,3 +172,14 @@ jobs:
           git commit -m "deploy(staging): gateway+landing $SHORT"
           git pull --rebase origin main
           git push
+
+      # Loud-stale guard (2026-08-26 crea-frontend OIDC incident): a build that
+      # pushes an image but dies before the digest lands leaves main green while
+      # the cluster keeps the old build. Name that failure mode explicitly.
+      - name: Fail loudly if images pushed but not pinned
+        if: always()
+        run: |
+          if [ "${{ needs.build-gateway.result }}" != "success" ] || [ "${{ needs.build-landing.result }}" != "success" ] || [ "${{ steps.pin.outcome }}" != "success" ]; then
+            echo "::error title=Image pushed but NOT pinned/deployed::The coupler gateway/landing images for ${{ github.sha }} may have been built and pushed to GHCR, but signing or the staging overlay digest patch did not complete. ArgoCD was never handed a new digest, so THE LIVE HOST IS STILL SERVING THE PREVIOUS BUILD even though this commit is green on main. Rerun the failed jobs (gh run rerun ${{ github.run_id }} --failed)."
+            exit 1
+          fi
