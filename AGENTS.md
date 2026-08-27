@@ -34,5 +34,21 @@ MADFAM's **Agent Tool Plane (ATP)**. Fourth platform alongside Enclii, Janua, an
 ## Auth
 
 - Verify Janua RS256 JWTs via `https://auth.madfam.io/.well-known/jwks.json`
-- Audience: `coupler-api`
-- Register client: `janua.client.yaml`
+- **Audience: a configured SET**, not a single value. The gateway verifier
+  (`apps/gateway/internal/auth/jwks.go`) accepts any `aud` in the set from
+  `COUPLER_JANUA_AUDIENCE` (comma-separated), defaulting to
+  `{coupler-api, coupler-gateway}`. A single-audience deployment still isolates
+  correctly — one value stays valid (per the merged `acceptedAudiences` /
+  `audienceOK` tests).
+- **One audience per caller** (owner ruling, 2026-08-27): every caller of the
+  Coupler API carries its own `aud`, which makes `aud` an auditable caller
+  identity at the gateway door. `coupler-api` = Angelia/Moirai execution calls
+  (angelia-coupler client); `coupler-gateway` = the gateway's own internal ops.
+  The verifier carries the audience the *token* presented (not the configured
+  set) into `Claims.Aud` so downstream handlers and audit records can tell the
+  callers apart. Adding a caller means registering a NEW audience and adding it
+  to the set — never re-using an existing caller's.
+- Register client: `janua.client.yaml` — now registers **coupler-gateway** with
+  `audience: coupler-gateway` and **2-segment** scopes
+  (`coupler:tools_execute`, `coupler:connections_read`; Janua's validator is
+  `namespace:action`, exactly one colon).
