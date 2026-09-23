@@ -73,7 +73,7 @@ spec:
             # Triggers (inbound webhooks). All optional at the pod level; each
             # handler fails closed on its own missing secret.
             - name: COUPLER_NAUTA_INGEST_URL
-              value: https://nauta.madfam.io/api/integrations/coupler/time-draft
+              value: https://app.nauta.quest/api/integrations/coupler/time-draft
             - name: ZOOM_WEBHOOK_SECRET_TOKEN
               valueFrom:
                 secretKeyRef:
