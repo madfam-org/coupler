@@ -30,7 +30,7 @@ spec:
         - name: COUPLER_AUTH_REQUIRED
           value: "true"
         - name: COUPLER_NAUTA_INGEST_URL
-          value: https://nauta.madfam.io/api/integrations/coupler/time-draft
+          value: https://app.nauta.quest/api/integrations/coupler/time-draft
       secrets:
         - zoom-webhook-secret-token
         - nauta-service-token
