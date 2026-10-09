@@ -18,9 +18,11 @@ import (
 )
 
 type Verifier struct {
-	required   bool
-	issuer     string
-	audience   string
+	required bool
+	issuer   string
+	// audiences is the SET of accepted `aud` values, in declaration order.
+	// One audience per CALLER — see acceptedAudiences.
+	audiences  []string
 	jwksURL    string
 	httpClient *http.Client
 
@@ -34,10 +36,7 @@ func NewVerifier(required bool) *Verifier {
 	if issuer == "" {
 		issuer = "https://auth.madfam.io"
 	}
-	audience := os.Getenv("COUPLER_JANUA_AUDIENCE")
-	if audience == "" {
-		audience = "coupler-api"
-	}
+	audiences := acceptedAudiences(os.Getenv("COUPLER_JANUA_AUDIENCE"))
 	jwksURL := os.Getenv("COUPLER_JANUA_JWKS_URL")
 	if jwksURL == "" {
 		jwksURL = strings.TrimRight(issuer, "/") + "/.well-known/jwks.json"
@@ -45,7 +44,7 @@ func NewVerifier(required bool) *Verifier {
 	return &Verifier{
 		required:   required,
 		issuer:     issuer,
-		audience:   audience,
+		audiences:  audiences,
 		jwksURL:    jwksURL,
 		httpClient: &http.Client{Timeout: 10 * time.Second},
 		keys:       map[string]*rsa.PublicKey{},
@@ -78,7 +77,7 @@ func (v *Verifier) Middleware(next http.Handler) http.Handler {
 		claims, err := v.verifyJWT(r.Context(), tokenStr)
 		if err != nil {
 			if !v.required && (tokenStr == "dev" || os.Getenv("COUPLER_AUTH_DEV_BYPASS") == "true") {
-				claims = Claims{Sub: "dev-user", Aud: v.audience}
+				claims = Claims{Sub: "dev-user", Aud: v.primaryAudience()}
 			} else {
 				http.Error(w, fmt.Sprintf(`{"error":"invalid_token","detail":%q}`, err.Error()), http.StatusUnauthorized)
 				return
@@ -119,28 +118,140 @@ func (v *Verifier) verifyJWT(ctx context.Context, tokenStr string) (Claims, erro
 	if iss, _ := mapClaims["iss"].(string); iss != "" && iss != v.issuer {
 		return out, fmt.Errorf("issuer mismatch")
 	}
-	if !audienceOK(mapClaims["aud"], v.audience) {
+	if !audienceOK(mapClaims["aud"], v.audiences) {
 		return out, fmt.Errorf("audience mismatch")
 	}
-	out = Claims{Sub: sub, Aud: v.audience}
+	// Carry the audience the TOKEN actually presented, not the configured set.
+	// Under one-audience-per-caller that value identifies the caller, so
+	// downstream handlers and audit records can tell angelia-coupler's
+	// executions (coupler-api) from the gateway's own ops (coupler-gateway).
+	out = Claims{Sub: sub, Aud: matchedAudience(mapClaims["aud"], v.audiences)}
 	if email, _ := mapClaims["email"].(string); email != "" {
 		out.Email = email
 	}
 	return out, nil
 }
 
-func audienceOK(aud any, expected string) bool {
+// defaultAudiences is the set of `aud` values Coupler's API accepts.
+//
+// ONE AUDIENCE PER CALLER (owner ruling, amended 2026-08-27). `aud` names the
+// CALLER, not merely the resource, which makes it an auditable caller identity
+// at the gateway door:
+//
+//	coupler-api      Angelia/Moirai's execution calls into Coupler, via the
+//	                 angelia-coupler Janua client (angelia repo,
+//	                 janua.coupler.client.yaml).
+//	coupler-gateway  The gateway's own internal operations, via this repo's
+//	                 janua.client.yaml.
+//
+// Adding a caller means registering a NEW audience and adding it here — never
+// re-using an existing caller's audience. Janua reconciles client registrations
+// on `audience` alone (apps/api/app/routers/v1/oauth_clients.py: registration_key
+// = client_key or audience; there is no client_key column), so two clients
+// sharing one audience do not get two rows: the second registration silently
+// returns 200 and overwrites the first client's row.
+var defaultAudiences = []string{"coupler-api", "coupler-gateway"}
+
+// acceptedAudiences parses COUPLER_JANUA_AUDIENCE into the accepted set.
+// Comma-separated for multiple; a single value stays valid, so existing
+// deployments that set one audience keep working unchanged.
+func acceptedAudiences(env string) []string {
+	var out []string
+	for _, part := range strings.Split(env, ",") {
+		if trimmed := strings.TrimSpace(part); trimmed != "" {
+			out = append(out, trimmed)
+		}
+	}
+	if len(out) == 0 {
+		return defaultAudiences
+	}
+	return out
+}
+
+// primaryAudience is the first accepted audience, used only where a single
+// representative value is needed (the dev bypass, which mints no real token).
+func (v *Verifier) primaryAudience() string {
+	if len(v.audiences) == 0 {
+		return ""
+	}
+	return v.audiences[0]
+}
+
+// matchedAudience returns the accepted audience the token actually presented —
+// the caller's identity under one-audience-per-caller. Only called after
+// audienceOK has passed; falls back to the first accepted audience for the
+// no-`aud` case that audienceOK deliberately tolerates.
+func matchedAudience(aud any, expected []string) string {
+	first := ""
+	if len(expected) > 0 {
+		first = expected[0]
+	}
+	pick := func(s string) (string, bool) {
+		for _, want := range expected {
+			if s == want {
+				return s, true
+			}
+		}
+		return "", false
+	}
+
 	switch v := aud.(type) {
 	case string:
-		return v == expected
+		if s, ok := pick(v); ok {
+			return s
+		}
 	case []any:
 		for _, item := range v {
-			if s, ok := item.(string); ok && s == expected {
+			if s, ok := item.(string); ok {
+				if m, matched := pick(s); matched {
+					return m
+				}
+			}
+		}
+	case []string:
+		for _, s := range v {
+			if m, matched := pick(s); matched {
+				return m
+			}
+		}
+	}
+	return first
+}
+
+// audienceOK reports whether the token's `aud` claim names one of the accepted
+// callers. A token's `aud` may be a string (what Janua mints today) or an array
+// (permitted by RFC 7519); either satisfies the check if any element matches
+// any accepted audience.
+func audienceOK(aud any, expected []string) bool {
+	matches := func(s string) bool {
+		for _, want := range expected {
+			if s == want {
+				return true
+			}
+		}
+		return false
+	}
+
+	switch v := aud.(type) {
+	case string:
+		return matches(v)
+	case []any:
+		for _, item := range v {
+			if s, ok := item.(string); ok && matches(s) {
+				return true
+			}
+		}
+	case []string:
+		for _, s := range v {
+			if matches(s) {
 				return true
 			}
 		}
 	}
-	return expected == "" || aud == nil
+	// Preserves prior behaviour: an unconfigured audience set, or a token with
+	// no `aud` at all, is not rejected on audience grounds. Issuer and
+	// signature checks still apply.
+	return len(expected) == 0 || aud == nil
 }
 
 func (v *Verifier) getKey(ctx context.Context, kid string) (*rsa.PublicKey, error) {

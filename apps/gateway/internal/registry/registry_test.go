@@ -26,23 +26,4 @@ func TestLoadFromDir(t *testing.T) {
 	if len(found) < 2 {
 		t.Fatalf("expected slack tools, got %d", len(found))
 	}
-
-	// Telegram must be discoverable exactly like every other connector: a
-	// manifest.yaml under connectors/ is the entire registration mechanism,
-	// no code-level connector list to update.
-	if _, ok := reg.Get("coupler.telegram.send_message"); !ok {
-		t.Fatal("missing coupler.telegram.send_message")
-	}
-	if _, ok := reg.Get("coupler.telegram.get_me"); !ok {
-		t.Fatal("missing coupler.telegram.get_me")
-	}
-	telegramTools := reg.Search("telegram")
-	if len(telegramTools) != 2 {
-		t.Fatalf("expected exactly 2 telegram tools, got %d", len(telegramTools))
-	}
-	for _, tt := range telegramTools {
-		if tt.Connector != "telegram" {
-			t.Fatalf("telegram tool %s has wrong connector: %s", tt.Name, tt.Connector)
-		}
-	}
 }

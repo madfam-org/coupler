@@ -3,7 +3,6 @@ package executor
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -14,7 +13,6 @@ import (
 
 	"github.com/madfam-org/coupler/apps/gateway/internal/janua"
 	"github.com/madfam-org/coupler/apps/gateway/internal/registry"
-	"github.com/madfam-org/coupler/apps/gateway/internal/telegram"
 )
 
 type Request struct {
@@ -32,39 +30,18 @@ type Result struct {
 }
 
 type Executor struct {
-	janua    *janua.Client
-	telegram *telegram.Client
-	client   *http.Client
+	janua  *janua.Client
+	client *http.Client
 }
 
 func New() *Executor {
 	return &Executor{
-		janua:    janua.NewClient(),
-		telegram: telegram.NewClientFromEnv(),
-		client:   &http.Client{Timeout: 30 * time.Second},
+		janua:  janua.NewClient(),
+		client: &http.Client{Timeout: 30 * time.Second},
 	}
 }
 
 func (e *Executor) Execute(ctx context.Context, tool registry.Tool, req Request) (Result, error) {
-	// Telegram is NOT a janua-delegated connector: a bot token is a single
-	// static secret shared by every caller, not a per-user OAuth grant, so
-	// there is no ConnectedAccount to resolve or delegate here. It branches
-	// BEFORE the janua calls below — routing it through ResolveConnectionID/
-	// DelegateToken would require faking a connection that does not exist.
-	// See docs/CONNECTOR_TELEGRAM.md.
-	if tool.Connector == "telegram" {
-		switch tool.Name {
-		case "coupler.telegram.send_message":
-			out, err := e.telegramSendMessage(ctx, req.Arguments)
-			return Result{Tool: tool.Name, Connector: tool.Connector, Output: out}, err
-		case "coupler.telegram.get_me":
-			out, err := e.telegramGetMe(ctx)
-			return Result{Tool: tool.Name, Connector: tool.Connector, Output: out}, err
-		default:
-			return Result{}, fmt.Errorf("no runtime handler for %s", tool.Name)
-		}
-	}
-
 	connID, err := e.janua.ResolveConnectionID(ctx, req.ActingUserID, tool.Connector, req.ConnectionID, req.UserJWT)
 	if err != nil {
 		return Result{}, err
@@ -224,51 +201,6 @@ func (e *Executor) slackAPI(ctx context.Context, token, method string, payload m
 		return out, fmt.Errorf("slack error: %v", out["error"])
 	}
 	return out, nil
-}
-
-func (e *Executor) telegramSendMessage(ctx context.Context, args map[string]any) (map[string]any, error) {
-	chatID, _ := args["chat_id"].(string)
-	text, _ := args["text"].(string)
-	parseMode, _ := args["parse_mode"].(string)
-	disableNotification, _ := args["disable_notification"].(bool)
-
-	res, err := e.telegram.SendMessage(ctx, telegram.SendMessageArgs{
-		ChatID:              chatID,
-		Text:                text,
-		ParseMode:           parseMode,
-		DisableNotification: disableNotification,
-	})
-	if err != nil {
-		return nil, telegramError(err)
-	}
-	return map[string]any{"ok": res.OK, "message_id": res.MessageID}, nil
-}
-
-func (e *Executor) telegramGetMe(ctx context.Context) (map[string]any, error) {
-	res, err := e.telegram.GetMe(ctx)
-	if err != nil {
-		return nil, telegramError(err)
-	}
-	return map[string]any{"ok": res.OK, "id": res.ID, "username": res.Username}, nil
-}
-
-// telegramError re-wraps a telegram package error into the message shape
-// callers of this executor already expect from other connectors (a plain
-// error whose .Error() carries a human-readable, TOKEN-FREE description).
-// *telegram.APIError satisfies error directly and its Error() method never
-// includes the bot token (see telegram/client.go), so honest 400/401/429
-// mapping and retry_after are already preserved by returning it as-is — this
-// wrapper exists to keep call sites in this file uniform and to document
-// that no retry is ever attempted here for 429s.
-func telegramError(err error) error {
-	var apiErr *telegram.APIError
-	if errors.As(err, &apiErr) {
-		// Deliberately NOT retried: a 429's retry_after is surfaced to the
-		// caller (via apiErr.Error()) so an operator or calling agent can
-		// decide, not silently retried inside coupler.
-		return apiErr
-	}
-	return err
 }
 
 func intArg(args map[string]any, key string) int {
